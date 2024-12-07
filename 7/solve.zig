@@ -2,7 +2,27 @@ const std = @import("std");
 
 const RuntimeError = error{GenericError};
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const genAlloc = gpa.allocator();
+
+var buffer: [5000]u8 = undefined;
+var fba = std.heap.FixedBufferAllocator.init(&buffer);
+const buffAlloc = fba.allocator();
+
 var accum: i64 = 0;
+const debug = false;
+const do_pt2: bool = true;
+
+pub fn main() !void {
+    defer {
+        _ = gpa.deinit();
+    }
+    _ = Concat(1, 2);
+    _ = Concat(12, 34);
+    _ = Concat(123, 456);
+    _ = Concat(1234, 5678);
+    try solve("input");
+}
 
 fn readFile(filename: []const u8) !void {
     const file = try std.fs.cwd().openFile(filename, .{});
@@ -42,18 +62,26 @@ fn readFile(filename: []const u8) !void {
 }
 
 fn Concat(left: i64, right: i32) i64 {
-    //const str = std.fmt.allocPrint(buffAlloc, "{d}{d}", .{ left, right }) catch |err| fmt: {
-    //    std.log.debug("{any}", .{@errorName(err)});
-    //    break :fmt &[_]u8{};
-    //};
-    //defer buffAlloc.free(str);
-    //return std.fmt.parseInt(i64, str, 10) catch |err| fmt: {
-    //    std.log.debug("{any}", .{@errorName(err)});
-    //    break :fmt 0;
-    //};
+    const digits = @as(i32, @intFromFloat(std.math.floor(std.math.log10(@as(f64, @floatFromInt(right)))))) + 1;
+    const cncat = (left * std.math.pow(i64, 10, digits)) + right;
 
-    const digitGrow = @as(i32, @intFromFloat(std.math.log10(@as(f64, @floatFromInt(right)) + 0.5))) + 1;
-    return (left * std.math.pow(i64, 10, digitGrow)) + right;
+    if (debug) {
+        const str = std.fmt.allocPrint(buffAlloc, "{d}{d};{d}", .{ left, right, cncat }) catch |err| fmt: {
+            std.log.debug("{any}", .{@errorName(err)});
+            break :fmt &[_]u8{};
+        };
+        defer buffAlloc.free(str);
+
+        const div = std.mem.indexOf(u8, str, ";").?;
+        const correct = std.mem.indexOf(u8, str[0..div], str[div + 1 ..]) != null;
+        if (!correct) {
+            std.debug.print("num: {d}; digits: {d}\n", .{ right, digits });
+            std.debug.print("{s}\n", .{str});
+        }
+        std.debug.assert(correct);
+    }
+
+    return cncat;
 }
 
 fn findSolution(result: i64, current: i64, rest: []i32) bool {
@@ -79,23 +107,7 @@ fn findSolution(result: i64, current: i64, rest: []i32) bool {
     }
 }
 
-const do_pt2: bool = true;
-
 fn solve(filename: []const u8) !void {
     try readFile(filename);
     std.debug.print("p: {}\n", .{accum});
-}
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const genAlloc = gpa.allocator();
-
-var buffer: [5000]u8 = undefined;
-var fba = std.heap.FixedBufferAllocator.init(&buffer);
-const buffAlloc = fba.allocator();
-
-pub fn main() !void {
-    defer {
-        _ = gpa.deinit();
-    }
-    try solve("input");
 }
