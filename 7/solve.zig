@@ -21,7 +21,7 @@ fn readFile(filename: []const u8) !void {
         const res = try std.fmt.parseInt(i64, working, 10);
         var rest = line[div.? + 2 ..];
         var k: usize = 0;
-        std.debug.print("{s};{s};{d}\n", .{ working, rest, res });
+        //std.debug.print("{s};{s};{d}\n", .{ working, rest, res });
         while (rest.len > 0) {
             defer k += 1;
             div = std.mem.indexOf(u8, rest, " ");
@@ -41,7 +41,25 @@ fn readFile(filename: []const u8) !void {
     }
 }
 
+fn Concat(left: i64, right: i32) i64 {
+    //const str = std.fmt.allocPrint(buffAlloc, "{d}{d}", .{ left, right }) catch |err| fmt: {
+    //    std.log.debug("{any}", .{@errorName(err)});
+    //    break :fmt &[_]u8{};
+    //};
+    //defer buffAlloc.free(str);
+    //return std.fmt.parseInt(i64, str, 10) catch |err| fmt: {
+    //    std.log.debug("{any}", .{@errorName(err)});
+    //    break :fmt 0;
+    //};
+
+    const digitGrow = @as(i32, @intFromFloat(std.math.log10(@as(f64, @floatFromInt(right)) + 0.5))) + 1;
+    return (left * std.math.pow(i64, 10, digitGrow)) + right;
+}
+
 fn findSolution(result: i64, current: i64, rest: []i32) bool {
+    if (current > result) {
+        return false;
+    }
     if (rest.len > 0) {
         const pop = rest[0];
         if (findSolution(result, current + pop, rest[1..])) {
@@ -51,16 +69,7 @@ fn findSolution(result: i64, current: i64, rest: []i32) bool {
             return true;
         }
         if (do_pt2) {
-            const concat = std.fmt.allocPrint(buffAlloc, "{d}{d}", .{ current, pop }) catch |err| fmt: {
-                std.log.debug("{any}", .{@errorName(err)});
-                break :fmt &[_]u8{};
-            };
-            defer buffAlloc.free(concat);
-            const ncurrent = std.fmt.parseInt(i64, concat, 10) catch |err| fmt: {
-                std.log.debug("{any}", .{@errorName(err)});
-                break :fmt 0;
-            };
-            if (findSolution(result, ncurrent, rest[1..])) {
+            if (findSolution(result, Concat(current, pop), rest[1..])) {
                 return true;
             }
         }
